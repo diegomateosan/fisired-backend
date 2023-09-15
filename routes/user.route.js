@@ -46,13 +46,12 @@ router.get('/:id', async (req, res) => {
     const user = await User.findById(req.params.id)
     const { password, updatedAt, ...others } = user._doc
     res.status(200).json(others)
-  } catch {
+  } catch (err) {
     res.status(500).json(err)
   }
 })
 
 // FOLLOW A USER
-
 router.put('/:id/follow', async (req, res) => {
   if (req.body.userId !== req.params.id) {
     try {

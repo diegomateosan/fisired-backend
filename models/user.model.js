@@ -28,14 +28,18 @@ const UserSchema = new mongoose.Schema(
       type: String,
       default: ''
     },
-    followers: {
-      type: Array,
-      default: []
-    },
-    followings: {
-      type: Array,
-      default: []
-    },
+    followers: [
+      {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: 'User'
+      }
+    ],
+    followings: [
+      {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: 'User'
+      }
+    ],
     isAdmin: {
       type: Boolean,
       default: false
@@ -59,5 +63,11 @@ const UserSchema = new mongoose.Schema(
   },
   { timestamps: true }
 )
+
+UserSchema.method('toJSON', function () {
+  const { __v, _id, ...object } = this.toObject()
+  object.id = _id
+  return object
+})
 
 module.exports = mongoose.model('User', UserSchema)

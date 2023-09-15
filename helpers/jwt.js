@@ -9,7 +9,7 @@ const generateJWT = (uid, name) => {
     }, (err, token) => {
       if (err) {
         console.log(err)
-        reject('No se pudo generar el token')
+        reject(new Error('No se pudo generar el token'))
       }
       resolve(token)
     })
