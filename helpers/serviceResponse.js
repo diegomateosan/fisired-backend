@@ -1,4 +1,4 @@
-class serviceResponse {
+class ServiceResponse {
   constructor () {
     this.success = false
     this.message = null
@@ -6,10 +6,11 @@ class serviceResponse {
     this.statusCode = 200
   }
 
-  setSucessResponse (message, data) {
+  setSucessResponse (message, data, code) {
     this.success = true
     this.message = message
     this.data = data
+    this.statusCode = code
   }
 
   setErrorResponse (message, code) {
@@ -20,4 +21,4 @@ class serviceResponse {
   }
 }
 
-module.exports = serviceResponse
+module.exports = ServiceResponse

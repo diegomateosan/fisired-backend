@@ -1,7 +1,10 @@
+const ServiceResponse = require('../helpers/serviceResponse')
 const Post = require('../models/post.model')
 const User = require('../models/user.model')
+const { createCustomError } = require('../helpers/createCustomError')
 
 const getTimeline = async (req, res) => {
+  const response = new ServiceResponse()
   const uid = req.uid
 
   try {
@@ -18,50 +21,41 @@ const getTimeline = async (req, res) => {
     // Ordenar los posts por fecha de creación (los más recientes primero)
     timelinePosts = timelinePosts.sort((a, b) => b.createdAt - a.createdAt)
 
-    res.json({
-      ok: true,
-      posts: timelinePosts
-    })
+    response.setSucessResponse('Posts del timeline encontrados exitosamente', timelinePosts)
   } catch (err) {
     console.log(err.message)
-    res.status(500).json({
-      ok: false,
-      msg: 'Por favor, hable con el administrador'
-    })
+    response.setErrorResponse(err.message, 500)
+  } finally {
+    res.send(response)
   }
 }
 
 const createPost = async (req, res) => {
+  const response = new ServiceResponse()
   const newPost = new Post(req.body)
   try {
     newPost.user = req.uid
     const savedPost = await newPost.save()
-    res.json({
-      ok: true,
-      post: savedPost
-    })
+    response.setSucessResponse('Post creado exitosamente', savedPost, 201)
   } catch (err) {
     console.log(err.message)
-    res.status(500).json({
-      ok: false,
-      msg: 'Por favor, hable con el administrador'
-    })
+    response.setErrorResponse(err.message, 500)
+  } finally {
+    res.send(response)
   }
 }
 
 const updatePost = async (req, res) => {
+  const response = new ServiceResponse()
   const idPost = req.params.id
   const uid = req.uid
 
   try {
     const post = await Post.findById(idPost)
     if (!post) {
-      return res.status(404).json({
-        ok: false,
-        msg: 'No existe una publicación con ese id'
-      })
+      throw createCustomError('No existe una publicación con ese id', 404)
     }
-    console.log(post.user.toString())
+
     if (post.user.toString() !== uid) {
       return res.status(401).json({
         ok: false,
@@ -76,85 +70,72 @@ const updatePost = async (req, res) => {
 
     const updatedPost = await Post.findByIdAndUpdate(idPost, newPost, { new: true })
 
-    res.json({
-      ok: true,
-      event: updatedPost
-    })
+    response.setSucessResponse('Post actualizado exitosamente', updatedPost)
   } catch (err) {
     console.log(err.message)
-    res.status(500).json({
-      ok: false,
-      msg: 'Por favor, hable con el administrador'
-    })
+    response.setErrorResponse(err.message, err.code)
+  } finally {
+    res.send(response)
   }
 }
 
 const deletePost = async (req, res) => {
+  const response = new ServiceResponse()
   const idPost = req.params.id
   const uid = req.uid
   try {
     const post = await Post.findById(idPost)
 
     if (!post) {
-      return res.status(404).json({
-        ok: false,
-        msg: 'No existe una publicación con ese id'
-      })
+      throw createCustomError('No existe una publicación con ese id', 404)
     }
 
     if (post.user.toString() !== uid) {
-      return res.status(401).json({
-        ok: false,
-        msg: 'No tiene previlegios para eliminar esta publicación'
-      })
+      throw createCustomError('No tiene previlegios de eliminar este publicación', 401)
     }
 
     const deletedPost = await Post.findOneAndDelete(idPost)
 
-    res.json({
-      ok: true,
-      deletedPost
-    })
+    response.setSucessResponse('Post eliminado exitosamente', deletedPost)
   } catch (err) {
     console.log(err.message)
-    res.status(500).json({
-      ok: false,
-      msg: 'Por favor, hable con el administrador'
-    })
+    response.setErrorResponse(err.message, err.code)
+  } finally {
+    res.send(response)
   }
 }
 
 const getSinglePost = async (req, res) => {
+  const response = new ServiceResponse()
   const idPost = req.params.id
 
   try {
     const post = await Post.findById(idPost)
       .populate({
         path: 'user',
-        select: 'username profilePicture' // Selecciona tanto el nombre de usuario como la foto de perfil del usuario
+        select: 'username profilePicture'
+      })
+      .populate({
+        path: 'comments',
+        select: 'content type',
+        match: { type: 'comment-post' }
       })
 
     if (!post) {
-      return res.status(404).json({
-        ok: false,
-        msg: 'No existe una publicación con ese id'
-      })
+      throw createCustomError('No existe una publicación con ese id', 404)
     }
 
-    res.status(200).json({
-      ok: true,
-      post
-    })
+    response.setSucessResponse('Post encontrado exitosamente', post)
   } catch (err) {
     console.log(err.message)
-    res.status(500).json({
-      ok: false,
-      msg: 'Por favor, hable con el administrador'
-    })
+    response.setErrorResponse(err.message, err.code)
+  } finally {
+    res.send(response)
   }
 }
 
 const likeDislikePost = async (req, res) => {
+  const response = new ServiceResponse()
   const idPost = req.params.id
   const uid = req.uid
 
@@ -162,31 +143,21 @@ const likeDislikePost = async (req, res) => {
     const post = await Post.findById(idPost)
 
     if (!post) {
-      return res.status(404).json({
-        ok: false,
-        msg: 'No existe una publicación con ese id'
-      })
+      throw createCustomError('No existe una publicación con ese id', 404)
     }
 
     if (!post.likes.includes(uid)) {
       await post.updateOne({ $push: { likes: uid } })
-      res.status(200).json({
-        ok: true,
-        msg: 'La publicación ha recibido me gusta'
-      })
+      response.setSucessResponse('La publicación ha recibido me gusta')
     } else {
       await post.updateOne({ $pull: { likes: uid } })
-      res.status(200).json({
-        ok: true,
-        msg: 'La publicación ha recibido no me gusta'
-      })
+      response.setSucessResponse('La publicación ha recibido no me gusta')
     }
   } catch (err) {
     console.log(err.message)
-    res.status(500).json({
-      ok: false,
-      msg: 'Por favor, hable con el administrador'
-    })
+    response.setErrorResponse(err.message, err.code)
+  } finally {
+    res.send(response)
   }
 }
 

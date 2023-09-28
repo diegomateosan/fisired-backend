@@ -50,6 +50,18 @@ const getCommentsComents = async (req, res) => {
 
     if (cantidad === undefined) {
       comentario = await Comment.find({ post: postId })
+        .populate({
+          path: 'user',
+          select: 'username profilePicture'
+        })
+        .populate({
+          path: 'comments',
+          select: 'content user',
+          populate: {
+            path: 'user',
+            select: 'username profilePicture'
+          }
+        })
     } else {
       comentario = await Comment.find({ post: postId }).limit(cantidad)
     }
@@ -68,9 +80,7 @@ const getCommentsComents = async (req, res) => {
 const addComment = async (req, res) => {
   const response = new ServiceResponse()
   const { content, postId, type } = req.body
-  // Implementar Cuando el front funcione o pasarlo por el body
-  // const {userId}= req;
-  const userId = '6503399db637b81eaa4140d8'
+  const userId = req.uid
 
   try {
     const valid =
