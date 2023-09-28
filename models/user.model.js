@@ -26,7 +26,7 @@ const UserSchema = new mongoose.Schema(
     },
     coverPicture: {
       type: String,
-      default: ''
+      default: 'https://icon-library.com/images/anonymous-avatar-icon/anonymous-avatar-icon-25.jpg'
     },
     followers: [
       {
@@ -63,11 +63,5 @@ const UserSchema = new mongoose.Schema(
   },
   { timestamps: true }
 )
-
-UserSchema.method('toJSON', function () {
-  const { __v, _id, ...object } = this.toObject()
-  object.id = _id
-  return object
-})
 
 module.exports = mongoose.model('User', UserSchema)

@@ -124,6 +124,36 @@ const deletePost = async (req, res) => {
   }
 }
 
+const getSinglePost = async (req, res) => {
+  const idPost = req.params.id
+
+  try {
+    const post = await Post.findById(idPost)
+      .populate({
+        path: 'user',
+        select: 'username profilePicture' // Selecciona tanto el nombre de usuario como la foto de perfil del usuario
+      })
+
+    if (!post) {
+      return res.status(404).json({
+        ok: false,
+        msg: 'No existe una publicación con ese id'
+      })
+    }
+
+    res.status(200).json({
+      ok: true,
+      post
+    })
+  } catch (err) {
+    console.log(err.message)
+    res.status(500).json({
+      ok: false,
+      msg: 'Por favor, hable con el administrador'
+    })
+  }
+}
+
 const likeDislikePost = async (req, res) => {
   const idPost = req.params.id
   const uid = req.uid
@@ -151,36 +181,6 @@ const likeDislikePost = async (req, res) => {
         msg: 'La publicación ha recibido no me gusta'
       })
     }
-  } catch (err) {
-    console.log(err.message)
-    res.status(500).json({
-      ok: false,
-      msg: 'Por favor, hable con el administrador'
-    })
-  }
-}
-
-const getSinglePost = async (req, res) => {
-  const idPost = req.params.id
-
-  try {
-    const post = await Post.findById(idPost)
-      .populate({
-        path: 'user',
-        select: 'username profilePicture' // Selecciona tanto el nombre de usuario como la foto de perfil del usuario
-      })
-
-    if (!post) {
-      return res.status(404).json({
-        ok: false,
-        msg: 'No existe una publicación con ese id'
-      })
-    }
-
-    res.status(200).json({
-      ok: true,
-      post
-    })
   } catch (err) {
     console.log(err.message)
     res.status(500).json({
