@@ -8,19 +8,21 @@ const cors = require('cors')
 // Crear servidor express
 const app = express()
 
-// Base de datos
+// Base de datoss
 dbConnection()
 
 // CORS
 app.use(cors())
 
-// Lectura y parseo del body
+// Lectua y parseo del body
 app.use(express.json())
 
 // Rutas
 app.use('/api/auth', require('./routes/auth.route'))
 app.use('/api/users', require('./routes/user.route'))
 app.use('/api/posts', require('./routes/post.route'))
+app.use('/api/comments', require('./routes/comment.route'))
+app.use('/api/communitys', require('./routes/community.route'))
 app.use('/api/chat', require('./routes/chat.route'))
 app.use('/api/message', require('./routes/message.route'))
 
