@@ -8,20 +8,26 @@ const {
   joinCommunity,
   leaveCommunity,
   addModerator,
-  deleteMember
-} = require('../controllers/community.controller')
+  deleteMember,
+  addPostGroup,
+  getPostRecently,
+  getAllCommunityUser,
+} = require('../controllers/community.controller');
+const { jwtValidator } = require('../middlewares/jwt-validator');
+const router = require('express').Router();
+router.use(jwtValidator);
+router.get('/getAll', getAllCommunity);
+router.get('/get/:communityId', getOneCommunity);
+router.get('/getMembers/:communityId', getMembers);
+router.post('/add', addCommunity);
+router.patch('/update/:communityId', updateCommunity);
+router.delete('/delete/:communityId', deleteCommunity);
+router.post('/join/:communityId', joinCommunity);
+router.post('/leave/:communityId', leaveCommunity);
+router.post('/addModerator/:communityId', addModerator);
+router.post('/deleteMember/:communityId', deleteMember);
+router.post('/addPost/:communityId', addPostGroup);
+router.get('/getPostRecently/:communityId', getPostRecently);
+router.get('/getAllCommunityUser', getAllCommunityUser);
 
-const router = require('express').Router()
-
-router.get('/getAll', getAllCommunity)
-router.get('/get/:communityId', getOneCommunity)
-router.get('/getMembers/:communityId', getMembers)
-router.post('/add', addCommunity)
-router.patch('/update/:communityId', updateCommunity)
-router.delete('/delete/:communityId', deleteCommunity)
-router.post('/join/:communityId', joinCommunity)
-router.post('/leave/:communityId', leaveCommunity)
-router.post('/addModerator/:communityId', addModerator)
-router.post('/deleteMember/:communityId', deleteMember)
-
-module.exports = router
+module.exports = router;

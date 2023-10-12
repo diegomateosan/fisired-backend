@@ -1,4 +1,4 @@
-const mongoose = require('mongoose')
+const mongoose = require('mongoose');
 
 const UserSchema = new mongoose.Schema(
   {
@@ -7,61 +7,70 @@ const UserSchema = new mongoose.Schema(
       required: true,
       min: 3,
       max: 20,
-      unique: true
+      unique: true,
     },
     email: {
       type: String,
       required: true,
       max: 50,
-      unique: true
+      unique: true,
     },
     password: {
       type: String,
       required: true,
-      min: 6
+      min: 6,
     },
     profilePicture: {
       type: String,
-      default: ''
+      default: '',
     },
     coverPicture: {
       type: String,
-      default: 'https://icon-library.com/images/anonymous-avatar-icon/anonymous-avatar-icon-25.jpg'
+      default:
+        'https://icon-library.com/images/anonymous-avatar-icon/anonymous-avatar-icon-25.jpg',
     },
     followers: [
       {
         type: mongoose.Schema.Types.ObjectId,
-        ref: 'User'
-      }
+        ref: 'User',
+      },
     ],
     followings: [
       {
         type: mongoose.Schema.Types.ObjectId,
-        ref: 'User'
-      }
+        ref: 'User',
+      },
     ],
+    Communitys: [
+      {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: 'Community',
+        default: [],
+      },
+    ],
+
     isAdmin: {
       type: Boolean,
-      default: false
+      default: false,
     },
     desc: {
       type: String,
-      max: 15
+      max: 15,
     },
     city: {
       type: String,
-      max: 50
+      max: 50,
     },
     from: {
       type: String,
-      max: 50
+      max: 50,
     },
     relationship: {
       type: Number,
-      enum: [1, 2, 3]
-    }
+      enum: [1, 2, 3],
+    },
   },
   { timestamps: true }
-)
+);
 
-module.exports = mongoose.model('User', UserSchema)
+module.exports = mongoose.model('User', UserSchema);

@@ -1,5 +1,5 @@
-const mongoose = require('mongoose')
-const Schema = mongoose.Schema
+const mongoose = require('mongoose');
+const Schema = mongoose.Schema;
 
 const communitySchema = new Schema(
   {
@@ -7,62 +7,62 @@ const communitySchema = new Schema(
       type: String,
       required: true,
       trim: true,
-      unique: true
+      unique: true,
     },
 
     description: {
       type: String,
       required: true,
-      trim: true
+      trim: true,
     },
 
     banner: {
-      type: String
+      type: String,
     },
 
     moderators: [
       {
         type: Schema.Types.ObjectId,
         ref: 'User',
-        default: []
-      }
+        default: [],
+      },
     ],
 
     creator: {
       type: Schema.Types.ObjectId,
-      ref: 'User'
+      ref: 'User',
     },
 
     members: [
       {
         type: Schema.Types.ObjectId,
         ref: 'User',
-        default: []
-      }
+        default: [],
+      },
     ],
 
     bannedUsers: [
       {
         type: Schema.Types.ObjectId,
         ref: 'User',
-        default: []
-      }
+        default: [],
+      },
     ],
 
     Posts: [
       {
         type: Schema.Types.ObjectId,
         ref: 'Post',
-        default: []
-      }
-    ]
+        default: [],
+      },
+    ],
   },
 
   {
-    timestamps: true
+    timestamps: true,
   }
-)
+);
 
-communitySchema.index({ name: 'text' })
+communitySchema.index({ name: 'text' });
 
-module.exports = mongoose.model('Community', communitySchema)
+module.exports = mongoose.model('Community', communitySchema);
