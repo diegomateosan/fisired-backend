@@ -1,4 +1,4 @@
-const jwt = require("jsonwebtoken");
+const jwt = require('jsonwebtoken')
 
 /**
  * NOTE: This middleware for decoding JWT is not necessary when using Passport's JWT strategy.
@@ -6,15 +6,15 @@ const jwt = require("jsonwebtoken");
  */
 
 const decodeToken = (req, res, next) => {
-  const authHeader = req.headers.authorization;
-  const token = authHeader.split(" ")[1];
+  const authHeader = req.headers.authorization
+  const token = authHeader.split(' ')[1]
   try {
-    const decoded = jwt.verify(token, process.env.SECRET_JWT_SEED);
-    req.userId = decoded.id;
-    next();
+    const decoded = jwt.verify(token, process.env.SECRET_JWT_SEED)
+    req.userId = decoded.id
+    next()
   } catch (err) {
-    res.status(401).json({ message: "Unauthorized" });
+    res.status(401).json({ message: 'Unauthorized' })
   }
-};
+}
 
-module.exports = decodeToken;
+module.exports = decodeToken
