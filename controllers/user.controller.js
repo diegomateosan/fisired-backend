@@ -1,132 +1,132 @@
-const { response } = require("express");
-const bcrypt = require("bcryptjs");
-const User = require("../models/user.model");
-const { generateJWT } = require("../helpers/jwt");
+const { response } = require('express')
+const bcrypt = require('bcryptjs')
+const User = require('../models/user.model')
+const { generateJWT } = require('../helpers/jwt')
 
 const addUser = async (req, res = response) => {
-  const { username, email, password, avatar } = req.body;
+  const { username, email, password, avatar } = req.body
 
   try {
-    let user = await User.findOne({ email });
-    let name = await User.findOne({ username });
+    let user = await User.findOne({ email })
+    const name = await User.findOne({ username })
 
     if (name) {
       return res.status(400).json({
         ok: false,
-        msg: "Nombre de usuario no válido.",
-      });
+        msg: 'Nombre de usuario no válido.'
+      })
     }
 
     if (user) {
       return res.status(400).json({
         ok: false,
-        msg: "Un usuario existe con ese correo",
-      });
+        msg: 'Un usuario existe con ese correo'
+      })
     }
 
-    user = new User(req.body);
+    user = new User(req.body)
 
     // Encriptar contraseña
-    const salt = bcrypt.genSaltSync();
-    user.password = bcrypt.hashSync(password, salt);
+    const salt = bcrypt.genSaltSync()
+    user.password = bcrypt.hashSync(password, salt)
 
-    await user.save();
+    await user.save()
 
     // Generar JWT
-    const token = await generateJWT(user._id, user.name);
+    const token = await generateJWT(user._id, user.name)
 
     res.status(201).json({
       ok: true,
       uid: user._id,
       name: user.name,
-      msg: "Usuario creado exitosamete",
-      token,
-    });
+      msg: 'Usuario creado exitosamete',
+      token
+    })
   } catch (error) {
-    console.log(error.message);
+    console.log(error.message)
     res.status(500).json({
       ok: false,
-      msg: "Por favor, hable con el administrador",
-    });
+      msg: 'Por favor, hable con el administrador'
+    })
   }
-};
+}
 
 const updateInfo = async (req, res) => {
   try {
-    const userId = req.params.id; // Obtener el ID de los parámetros de ruta
-    console.log(userId);
-    const user = await User.findById(userId);
+    const userId = req.params.id // Obtener el ID de los parámetros de ruta
+    console.log(userId)
+    const user = await User.findById(userId)
     if (!user) {
       return res.status(404).json({
-        message: "User not found",
-      });
+        message: 'User not found'
+      })
     }
 
-    const { location, interests, bio } = req.body;
+    const { location, interests, bio } = req.body
 
     // Agregar los nuevos campos si existen en el cuerpo de la solicitud
     if (location) {
-      user.location = location;
+      user.location = location
     }
     if (interests) {
-      user.interests = interests;
+      user.interests = interests
     }
     if (bio) {
-      user.bio = bio;
+      user.bio = bio
     }
 
     // Guardar la actualización en la base de datos
-    await user.save();
+    await user.save()
 
     res.status(200).json({
-      message: "User info updated successfully",
-    });
+      message: 'User info updated successfully'
+    })
   } catch (err) {
     res.status(500).json({
-      message: "Error updating user info",
-    });
+      message: 'Error updating user info'
+    })
   }
-};
+}
 
 const getUser = async (req, res) => {
   try {
-    const userId = req.params.id;
+    const userId = req.params.id
 
     // Busca el usuario por ID en la base de datos
-    const user = await User.findById(userId);
+    const user = await User.findById(userId)
 
     if (!user) {
-      return res.status(404).json({ message: "Usuario no encontrado" });
+      return res.status(404).json({ message: 'Usuario no encontrado' })
     }
 
     // Si se encuentra el usuario, se envía como respuesta
-    res.status(200).json(user);
+    res.status(200).json(user)
   } catch (err) {
-    res.status(500).json({ message: "Error al obtener el usuario" });
+    res.status(500).json({ message: 'Error al obtener el usuario' })
   }
-};
+}
 
 const deleteUser = async (req, res) => {
   try {
-    const userId = req.params.id;
+    const userId = req.params.id
 
     // Busca y elimina el usuario por ID en la base de datos
-    const deletedUser = await User.findByIdAndRemove(userId);
+    const deletedUser = await User.findByIdAndRemove(userId)
 
     if (!deletedUser) {
-      return res.status(404).json({ message: "Usuario no encontrado" });
+      return res.status(404).json({ message: 'Usuario no encontrado' })
     }
 
     // Si el usuario se eliminó correctamente, se envía una respuesta de éxito
-    res.status(200).json({ message: "Usuario eliminado exitosamente" });
+    res.status(200).json({ message: 'Usuario eliminado exitosamente' })
   } catch (err) {
-    res.status(500).json({ message: "Error al eliminar el usuario" });
+    res.status(500).json({ message: 'Error al eliminar el usuario' })
   }
-};
+}
 
 module.exports = {
   addUser,
   updateInfo,
   getUser,
-  deleteUser,
-};
+  deleteUser
+}

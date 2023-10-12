@@ -2,6 +2,7 @@ const ServiceResponse = require('../helpers/serviceResponse')
 const Post = require('../models/post.model')
 const User = require('../models/user.model')
 const { createCustomError } = require('../helpers/createCustomError')
+const Comment = require('../models/comment.model')
 
 const getTimeline = async (req, res) => {
   const response = new ServiceResponse()
@@ -10,7 +11,7 @@ const getTimeline = async (req, res) => {
   try {
     // Traer los post del usuario y de sus amigos
     const currentUser = await User.findById(uid)
-    const userPosts = await Post.find({ user: currentUser })
+    const userPosts = await Post.find({ user: currentUser }).populate('user', '-password')
     const friendPosts = await Promise.all(
       currentUser.followings.map((followedUser) => {
         return Post.find({ user: followedUser })
@@ -36,6 +37,7 @@ const createPost = async (req, res) => {
   try {
     newPost.user = req.uid
     const savedPost = await newPost.save()
+    await savedPost.populate('user', '-password')
     response.setSucessResponse('Post creado exitosamente', savedPost, 201)
   } catch (err) {
     console.log(err.message)
@@ -117,13 +119,29 @@ const getSinglePost = async (req, res) => {
       })
       .populate({
         path: 'comments',
-        select: 'content type',
+        select: 'content type user',
         match: { type: 'comment-post' }
       })
+      .exec()
 
     if (!post) {
       throw createCustomError('No existe una publicación con ese id', 404)
     }
+
+    // Itera a través de los comentarios y obtén los detalles de los usuarios.
+    const populatedComments = await Promise.all(
+      post.comments.map(async (comment) => {
+        const populatedComment = await Comment.findById(comment._id).populate({
+          path: 'user',
+          select: 'username profilePicture'
+        })
+        // Reemplaza el comentario con el comentario poblado.
+        return populatedComment
+      })
+    )
+
+    // Reemplaza los comentarios en el post con los comentarios poblados.
+    post.comments = populatedComments
 
     response.setSucessResponse('Post encontrado exitosamente', post)
   } catch (err) {

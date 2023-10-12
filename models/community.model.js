@@ -48,7 +48,6 @@ const communitySchema = new Schema(
         default: []
       }
     ],
-
     Posts: [
       {
         type: Schema.Types.ObjectId,
