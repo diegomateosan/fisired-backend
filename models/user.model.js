@@ -41,14 +41,13 @@ const UserSchema = new mongoose.Schema(
         ref: 'User',
       },
     ],
-    Communitys: [
+
+    communities: [
       {
         type: mongoose.Schema.Types.ObjectId,
         ref: 'Community',
-        default: [],
       },
     ],
-
     isAdmin: {
       type: Boolean,
       default: false,

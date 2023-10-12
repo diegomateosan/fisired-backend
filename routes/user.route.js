@@ -1,6 +1,32 @@
-const bcrypt = require('bcryptjs');
-const User = require('../models/user.model');
 const router = require('express').Router();
+const bcrypt = require('bcryptjs');
+// const passport = require('passport')
+const User = require('../models/user.model');
+
+const {
+  addUser,
+  updateInfo,
+  getUser,
+  deleteUser,
+  getcommunity,
+  getUserCommunities,
+} = require('../controllers/user.controller');
+
+// const decodeToken = require('../middlewares/decodeToken')
+// const requireAuth = passport.authenticate('jwt', { session: false }, null)
+
+// ADD USER
+router.post('/add', addUser);
+
+router.put('/:id/update', updateInfo);
+
+router.get('/:id/get', getUser);
+
+router.delete('/:id/delete', deleteUser);
+
+router.get('/:userId/communities', getUserCommunities);
+
+router.get('/:userId/populate', getcommunity);
 
 // UPDATE USER
 router.put('/:id', async (req, res) => {
@@ -44,6 +70,7 @@ router.delete('/:id', async (req, res) => {
 router.get('/:id', async (req, res) => {
   try {
     const user = await User.findById(req.params.id);
+    console.log('Llegó');
     const { password, updatedAt, ...others } = user._doc;
     res.status(200).json(others);
   } catch (err) {

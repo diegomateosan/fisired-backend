@@ -25,7 +25,11 @@ const PostSchema = new mongoose.Schema(
         type: mongoose.Schema.Types.ObjectId,
         ref: 'Comment'
       }
-    ]
+    ],
+    group: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: 'Community'
+    }
   },
   { timestamps: true }
 )

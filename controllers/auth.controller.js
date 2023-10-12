@@ -29,8 +29,7 @@ const createUser = async (req, res = response) => {
 
     res.status(201).json({
       ok: true,
-      uid: user._id,
-      name: user.name,
+      user,
       token,
     });
   } catch (error) {
@@ -70,8 +69,7 @@ const loginUser = async (req, res = response) => {
 
     res.json({
       ok: true,
-      uid: user._id,
-      name: user.name,
+      user,
       token,
     });
   } catch (error) {
