@@ -7,7 +7,9 @@ const {
   addUser,
   updateInfo,
   getUser,
-  deleteUser
+  deleteUser,
+  getcommunity,
+  getUserCommunities
 } = require('../controllers/user.controller')
 
 // const decodeToken = require('../middlewares/decodeToken')
@@ -21,6 +23,10 @@ router.put('/:id/update', updateInfo)
 router.get('/:id/get', getUser)
 
 router.delete('/:id/delete', deleteUser)
+
+router.get('/:userId/communities', getUserCommunities)
+
+router.get('/:userId/populate', getcommunity)
 
 // UPDATE USER
 router.put('/:id', async (req, res) => {

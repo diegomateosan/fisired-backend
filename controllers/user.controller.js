@@ -1,6 +1,7 @@
 const { response } = require('express')
 const bcrypt = require('bcryptjs')
 const User = require('../models/user.model')
+const Community = require('../models/community.model')
 const { generateJWT } = require('../helpers/jwt')
 
 const addUser = async (req, res = response) => {
@@ -48,6 +49,57 @@ const addUser = async (req, res = response) => {
       ok: false,
       msg: 'Por favor, hable con el administrador'
     })
+  }
+}
+
+// Ruta para obtener las IDs de las comunidades de un usuario
+const getcommunity = async (req, res) => {
+  try {
+    const userId = req.params.userId
+    const user = await User.findById(userId).populate('communities')
+    console.log(user)
+    if (!user) {
+      return res.status(404).json({ message: 'Usuario no encontrado' })
+    }
+    res.status(201).json({
+      ok: true,
+      community: user.communities,
+      msg: 'Comunidades encontradas'
+    })
+  } catch (error) {
+    console.error(error)
+    res.status(500).json({
+      message: 'Error al obtener las IDs de las comunidades del usuario'
+    })
+  }
+}
+
+const getUserCommunities = async (req, res) => {
+  try {
+    // // Obtén el ID del usuario desde los parámetros de la URL
+    // const userId = req.params.userId;
+
+    // // Encuentra todas las comunidades donde el usuario es miembro
+    // const communities = await Community.find({ members: userId });
+    // Obtén el ID del usuario desde los parámetros de la URL
+    const userId = req.params.userId
+
+    // Encuentra al usuario por su ID y selecciona sus comunidades
+    const user = await User.findById(userId).select('communities')
+
+    if (!user) {
+      return res.status(404).json({ message: 'Usuario no encontrado' })
+    }
+    res.status(201).json({
+      ok: true,
+      Community: user.communities,
+      msg: 'Comunidades encontradas'
+    })
+  } catch (error) {
+    console.error(error)
+    res
+      .status(500)
+      .json({ message: 'Error al obtener las comunidades del usuario' })
   }
 }
 
@@ -128,5 +180,7 @@ module.exports = {
   addUser,
   updateInfo,
   getUser,
-  deleteUser
+  deleteUser,
+  getcommunity,
+  getUserCommunities
 }
