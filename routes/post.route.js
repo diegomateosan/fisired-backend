@@ -5,7 +5,8 @@ const {
   likeDislikePost,
   updatePost,
   deletePost,
-  getSinglePost
+  getSinglePost,
+  getLikesPost
 } = require('../controllers/post.controller')
 const { jwtValidator } = require('../middlewares/jwt-validator')
 
@@ -26,6 +27,9 @@ router.delete('/:id', deletePost)
 
 // LIKE DISLIKE A POST
 router.put('/:id/like', likeDislikePost)
+
+// GET LIKES FROM A POST
+router.get('/:id/likes', getLikesPost)
 
 // GET A POST
 router.get('/:id', getSinglePost)

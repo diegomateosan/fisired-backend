@@ -3,6 +3,7 @@ const Post = require('../models/post.model')
 const User = require('../models/user.model')
 const { createCustomError } = require('../helpers/createCustomError')
 const Comment = require('../models/comment.model')
+const cloudinary = require('../helpers/cloudinary')
 
 const getTimeline = async (req, res) => {
   const response = new ServiceResponse()
@@ -34,8 +35,24 @@ const getTimeline = async (req, res) => {
 const createPost = async (req, res) => {
   const response = new ServiceResponse()
   const newPost = new Post(req.body)
+
   try {
     newPost.user = req.uid
+    // req.bodi.img es un string para subirlo al cloudinary
+    if (req.body.img !== '') {
+      const result = await cloudinary.uploader.upload(req.body.img, {
+        folder: 'posts'
+      })
+      newPost.img = {
+        public_id: result.public_id,
+        url: result.secure_url
+      }
+    } else {
+      newPost.img = {
+        public_id: '',
+        url: ''
+      }
+    }
     const savedPost = await newPost.save()
     await savedPost.populate('user', '-password')
     response.setSucessResponse('Post creado exitosamente', savedPost, 201)
@@ -51,7 +68,6 @@ const updatePost = async (req, res) => {
   const response = new ServiceResponse()
   const idPost = req.params.id
   const uid = req.uid
-
   try {
     const post = await Post.findById(idPost)
     if (!post) {
@@ -64,14 +80,41 @@ const updatePost = async (req, res) => {
         msg: 'No tiene previlegios de editar este publicación'
       })
     }
-
     const newPost = {
       ...req.body,
       user: uid
     }
 
+    // Eliminamos la foto de cloudinary
+    if (post.img.public_id !== '') {
+      const imgId = post.img.public_id
+      await cloudinary.uploader.destroy(imgId)
+    }
+    // Subimos la nueva foto a cloudinary
+    if (req.body.img === '') {
+      // No se hace nada con la imagen, deja el campo de imagen vacío
+      newPost.img = {
+        public_id: '',
+        url: ''
+      }
+    } else if (req.body.img?.startsWith('http') || req.body.img?.startsWith('https')) {
+      // Si es una URL, no se hace ningun cambio
+      newPost.img = {
+        public_id: post.img.public_id,
+        url: post.img.url
+      }
+    } else {
+      // Si es una cadena codificada en base64, se sube Cloudinary y guarda la URL
+      const result = await cloudinary.uploader.upload(req.body.img, {
+        folder: 'posts'
+      })
+      newPost.img = {
+        public_id: result.public_id,
+        url: result.secure_url
+      }
+    }
     const updatedPost = await Post.findByIdAndUpdate(idPost, newPost, { new: true })
-
+    await updatedPost.populate('user', '-password')
     response.setSucessResponse('Post actualizado exitosamente', updatedPost)
   } catch (err) {
     console.log(err.message)
@@ -85,6 +128,7 @@ const deletePost = async (req, res) => {
   const response = new ServiceResponse()
   const idPost = req.params.id
   const uid = req.uid
+
   try {
     const post = await Post.findById(idPost)
 
@@ -96,8 +140,13 @@ const deletePost = async (req, res) => {
       throw createCustomError('No tiene previlegios de eliminar este publicación', 401)
     }
 
-    const deletedPost = await Post.findOneAndDelete(idPost)
+    // Eliminamos la foto de cloudinary
+    if (post.img.public_id !== '') {
+      const imgId = post.img.public_id
+      await cloudinary.uploader.destroy(imgId)
+    }
 
+    const deletedPost = await Post.findOneAndDelete({ _id: idPost })
     response.setSucessResponse('Post eliminado exitosamente', deletedPost)
   } catch (err) {
     console.log(err.message)
@@ -179,11 +228,40 @@ const likeDislikePost = async (req, res) => {
   }
 }
 
+const getLikesPost = async (req, res) => {
+  const response = new ServiceResponse()
+  const idPost = req.params.id
+
+  try {
+    const post = await Post.findById(idPost)
+
+    if (!post) {
+      throw createCustomError('No existe una publicación con ese id', 404)
+    }
+
+    await post.populate('likes', 'username profilePicture email desc')
+
+    const likesFromPost = post.likes // Lista de usuarios que dieron "me gusta" a la publicación
+    const likes = {
+      users: likesFromPost,
+      count: likesFromPost.length // cantidad total de "me gusta"
+    }
+
+    response.setSucessResponse('Post encontrado exitosamente', likes)
+  } catch (err) {
+    console.log(err.message)
+    response.setErrorResponse(err.message, err.code)
+  } finally {
+    res.send(response)
+  }
+}
+
 module.exports = {
   getTimeline,
   createPost,
   updatePost,
   deletePost,
   likeDislikePost,
-  getSinglePost
+  getSinglePost,
+  getLikesPost
 }
