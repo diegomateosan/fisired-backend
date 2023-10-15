@@ -25,7 +25,9 @@ const getOneCommunity = async (req, res) => {
       throw createCustomError('No existe una Grupo con ese id', 404);
     }
 
-    const comunidad = await Community.findById(communityId);
+    const comunidad = await Community.findById(communityId).populate(
+      'members moderators creator'
+    );
     response.setSucessResponse('Grupo  Encontrado Exitosamente', comunidad);
   } catch (error) {
     response.setErrorResponse(error.message, error.code);
@@ -38,7 +40,7 @@ const getMembers = async (req, res) => {
   const communityId = req.params.communityId;
   const response = new ServiceResponse();
   try {
-    const valid = await Community.findById(communityId);
+    const valid = await Community.findById(communityId).populate('members');
 
     if (!valid) {
       throw createCustomError('No existe una Grupo con ese id', 404);
@@ -296,13 +298,16 @@ const getPostRecently = async (req, res) => {
     const valid = await Community.findById(communityId).populate({
       path: 'Posts',
       options: { sort: { createdAt: 'desc' }, limit: 1 },
+      populate: {
+        path: 'user',
+      },
     });
 
     if (!valid) {
       throw createCustomError('No existe una Grupo con ese id', 404);
     }
 
-    response.setSucessResponse('Publicación de grupo obtenida exitosamente', valid);
+    response.setSucessResponse('Publicación de grupo obtenida exitosamente', valid.Posts);
   } catch (error) {
     response.setErrorResponse(error.message, error.code);
   } finally {
