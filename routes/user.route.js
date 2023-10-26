@@ -28,6 +28,7 @@ router.delete('/:id/delete', deleteUser)
 router.get('/:userId/communities', getUserCommunities)
 
 router.get('/:userId/populate', getcommunity)
+
 router.get('/search', searchUser)
 
 // UPDATE USER
