@@ -5,8 +5,18 @@ const postModel = require('../models/post.model');
 
 const getAllCommunity = async (req, res) => {
   const response = new ServiceResponse();
+  const join = req.params.join;
+  const user = req.uid;
+  let group;
   try {
-    const group = await Community.find();
+    if (join == 'true') {
+      group = await Community.find({
+        members: { $nin: [user] },
+      });
+    } else {
+      group = await Community.find();
+    }
+
     response.setSucessResponse('Todos los Grupos Encontrados Exitosamente', group);
   } catch (error) {
     response.setErrorResponse(error.message, 500);
@@ -25,8 +35,29 @@ const getOneCommunity = async (req, res) => {
       throw createCustomError('No existe una Grupo con ese id', 404);
     }
 
-    const comunidad = await Community.findById(communityId);
+    const comunidad = await Community.findById(communityId).populate(
+      'members moderators creator'
+    );
+
     response.setSucessResponse('Grupo  Encontrado Exitosamente', comunidad);
+  } catch (error) {
+    response.setErrorResponse(error.message, error.code);
+  } finally {
+    res.send(response);
+  }
+};
+
+const getKnowAdmin = async (req, res) => {
+  const communityId = req.params.communityId;
+  const response = new ServiceResponse();
+  const user = req.uid;
+  try {
+    const valid = await Community.findById(communityId);
+
+    if (!valid) {
+      throw createCustomError('No existe una Grupo con ese id', 404);
+    }
+    response.setSucessResponse('Usted es administrador', valid.moderators.includes(user));
   } catch (error) {
     response.setErrorResponse(error.message, error.code);
   } finally {
@@ -38,7 +69,7 @@ const getMembers = async (req, res) => {
   const communityId = req.params.communityId;
   const response = new ServiceResponse();
   try {
-    const valid = await Community.findById(communityId);
+    const valid = await Community.findById(communityId).populate('members');
 
     if (!valid) {
       throw createCustomError('No existe una Grupo con ese id', 404);
@@ -108,7 +139,7 @@ const updateCommunity = async (req, res) => {
       communityId,
       { description, banner },
       { new: true }
-    );
+    ).populate('members moderators creator');
     response.setSucessResponse('Grupo Actualizado Exitosamente', comunidad);
   } catch (error) {
     response.setErrorResponse(error.message, error.code);
@@ -165,6 +196,7 @@ const joinCommunity = async (req, res) => {
 };
 
 const leaveCommunity = async (req, res) => {
+  // Si soy admin y soy el ultimo admin, debo designar a otro admin antes de salir.
   const communityId = req.params.communityId;
   const response = new ServiceResponse();
   try {
@@ -174,15 +206,10 @@ const leaveCommunity = async (req, res) => {
       throw createCustomError('No existe una Grupo con ese id', 404);
     }
     const userID = req.uid;
-    const comunidad = await Community.updateMany(
+    const comunidad = await Community.updateOne(
+      { _id: communityId },
       {
-        $or: [{ members: userID }, { moderators: userID }],
-      },
-      {
-        $pull: {
-          members: userID,
-          moderators: userID,
-        },
+        $pull: { members: userID, moderators: userID },
       },
       { new: true }
     );
@@ -201,21 +228,53 @@ const addModerator = async (req, res) => {
   const response = new ServiceResponse();
   const uid = req.uid;
   try {
-    if (!valid.moderators.includes(uid)) {
-      throw createCustomError('No tiene permiso para publicar en este grupo', 401);
-    }
     const valid = await Community.findById(communityId);
 
     if (!valid) {
       throw createCustomError('No existe una Grupo con ese id', 404);
     }
 
+    if (!valid.moderators.includes(uid)) {
+      throw createCustomError('No tiene permiso de administrador grupo', 401);
+    }
+
     const comunidad = await Community.findByIdAndUpdate(
       communityId,
       { $push: { moderators: userId } },
       { new: true }
-    );
+    ).populate('members moderators creator');
+
     response.setSucessResponse('Usuario Ascendido Correctamente', comunidad);
+  } catch (error) {
+    response.setErrorResponse(error.message, error.code);
+  } finally {
+    res.send(response);
+  }
+};
+
+const deleteModerator = async (req, res) => {
+  const { userId } = req.body;
+  const communityId = req.params.communityId;
+  const response = new ServiceResponse();
+  const uid = req.uid;
+  try {
+    const valid = await Community.findById(communityId);
+
+    if (!valid) {
+      throw createCustomError('No existe una Grupo con ese id', 404);
+    }
+
+    if (!valid.moderators.includes(uid)) {
+      throw createCustomError('No tiene permiso de administrador grupo', 401);
+    }
+
+    const comunidad = await Community.findByIdAndUpdate(
+      communityId,
+      { $pull: { moderators: userId } },
+      { new: true }
+    ).populate('members moderators creator');
+
+    response.setSucessResponse('Usuario Descendido Correctamente', comunidad);
   } catch (error) {
     response.setErrorResponse(error.message, error.code);
   } finally {
@@ -229,27 +288,20 @@ const deleteMember = async (req, res) => {
   const response = new ServiceResponse();
   const uid = req.uid;
   try {
-    if (!valid.moderators.includes(uid)) {
-      throw createCustomError('No tiene permiso para publicar en este grupo', 401);
-    }
     const valid = await Community.findById(communityId);
 
     if (!valid) {
       throw createCustomError('No existe una Grupo con ese id', 404);
     }
+    if (!valid.moderators.includes(uid)) {
+      throw createCustomError('No tiene permisos de administrador en este grupo', 401);
+    }
 
-    const comunidad = await Community.updateMany(
-      {
-        $or: [{ members: userId }, { moderators: userId }],
-      },
-      {
-        $pull: {
-          members: userId,
-          moderators: userId,
-        },
-      },
+    const comunidad = await Community.findByIdAndUpdate(
+      communityId,
+      { $pull: { moderators: userId, members: userId } },
       { new: true }
-    );
+    ).populate('members moderators creator');
 
     response.setSucessResponse('Usuario ha salido del grupo Correctamente', comunidad);
   } catch (error) {
@@ -296,13 +348,16 @@ const getPostRecently = async (req, res) => {
     const valid = await Community.findById(communityId).populate({
       path: 'Posts',
       options: { sort: { createdAt: 'desc' }, limit: 1 },
+      populate: {
+        path: 'user',
+      },
     });
 
     if (!valid) {
       throw createCustomError('No existe una Grupo con ese id', 404);
     }
 
-    response.setSucessResponse('Publicación de grupo obtenida exitosamente', valid);
+    response.setSucessResponse('Publicación de grupo obtenida exitosamente', valid.Posts);
   } catch (error) {
     response.setErrorResponse(error.message, error.code);
   } finally {
@@ -340,4 +395,6 @@ module.exports = {
   addPostGroup,
   getPostRecently,
   getAllCommunityUser,
+  getKnowAdmin,
+  deleteModerator,
 };
