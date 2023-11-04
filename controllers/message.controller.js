@@ -11,7 +11,7 @@ const sendMessage = async (req, res) => {
       msg: 'Faltan campos obligatorios'
     })
   }
-
+  console.log('req.uid', req.uid)
   const newMessage = {
     sender: req.uid,
     content,
@@ -21,11 +21,11 @@ const sendMessage = async (req, res) => {
   try {
     let message = await Message.create(newMessage)
 
-    message = await message.populate('sender', 'name profilePicture')
+    message = await message.populate('sender', 'username profilePicture')
     message = await message.populate('chat')
     message = await User.populate(message, {
       path: 'chat.users',
-      select: 'name profilePicture email'
+      select: 'username profilePicture email'
     })
 
     await Chat.findByIdAndUpdate(req.body.chatId, { latestMessage: message })
@@ -46,7 +46,7 @@ const sendMessage = async (req, res) => {
 const getAllMessages = async (req, res) => {
   try {
     const messages = await Message.find({ chat: req.params.chatId })
-      .populate('sender', 'name profilePicture email')
+      .populate('sender', 'username profilePicture email')
       .populate('chat')
 
     res.status(200).json({

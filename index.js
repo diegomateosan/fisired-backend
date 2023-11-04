@@ -28,8 +28,8 @@ app.use('/api/users', require('./routes/user.route'))
 app.use('/api/posts', require('./routes/post.route'))
 app.use('/api/comments', require('./routes/comment.route'))
 app.use('/api/communitys', require('./routes/community.route'))
-app.use('/api/chat', require('./routes/chat.route'))
-app.use('/api/message', require('./routes/message.route'))
+app.use('/api/chats', require('./routes/chat.route'))
+app.use('/api/messages', require('./routes/message.route'))
 
 // Escuchar peticines
 const server = app.listen(process.env.PORT, () => {
@@ -40,7 +40,7 @@ const server = app.listen(process.env.PORT, () => {
 const io = require('socket.io')(server, {
   pingTimeout: 60000,
   cors: {
-    origin: 'http://127.0.0.1:5173'
+    origin: '*'
   }
 })
 // Configura las rutas de Socket.io

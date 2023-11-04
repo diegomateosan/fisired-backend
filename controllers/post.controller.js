@@ -15,7 +15,7 @@ const getTimeline = async (req, res) => {
     const userPosts = await Post.find({ user: currentUser }).populate('user', '-password')
     const friendPosts = await Promise.all(
       currentUser.followings.map((followedUser) => {
-        return Post.find({ user: followedUser })
+        return Post.find({ user: followedUser }).populate('user', '-password')
       })
     )
     // Combinar los posts del usuario actual y los posts de sus amigos en una sola matriz

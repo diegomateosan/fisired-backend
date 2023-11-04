@@ -184,8 +184,8 @@ const searchUser = async (req, res) => {
     const users = await User.find({
       $or: [
         // { _id: searchValue }, // Búsqueda por ID
-        { email: searchValue }, // Búsqueda por email
-        { username: searchValue } // Búsqueda por username
+        { email: { $regex: req.query.search, $options: 'i' } }, // Búsqueda por email
+        { username: { $regex: req.query.search, $options: 'i' } } // Búsqueda por username
       ]
     })
 

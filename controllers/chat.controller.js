@@ -84,7 +84,7 @@ const getChats = async (req, res) => {
 
 const createGroupChat = async (req, res) => {
   if (!req.body.users || !req.body.name) {
-    res.status(400).json({
+    return res.status(400).json({
       ok: false,
       msg: 'Por favor, llene todos los campos'
     })
@@ -93,7 +93,7 @@ const createGroupChat = async (req, res) => {
   const users = JSON.parse(req.body.users)
 
   if (users.length < 2) {
-    res.status(400).json({
+    return res.status(400).json({
       ok: false,
       msg: 'Más de 2 usuarios es necesario para formar un grupo'
     })
@@ -113,13 +113,13 @@ const createGroupChat = async (req, res) => {
       .populate('users', '-password')
       .populate('groupAdmin', '-password')
 
-    res.status(200).json({
+    return res.status(200).json({
       ok: true,
       fullGroupChat
     })
   } catch (err) {
-    console.log(err.message)
-    res.status(500).json({
+    console.error(err.message)
+    return res.status(500).json({
       ok: false,
       msg: 'Por favor, hable con el administrador'
     })
