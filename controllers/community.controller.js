@@ -2,6 +2,8 @@ const ServiceResponse = require('../helpers/serviceResponse')
 const Community = require('../models/community.model')
 const { createCustomError } = require('../helpers/createCustomError')
 const postModel = require('../models/post.model')
+const userModel = require('../models/user.model')
+const cloudinary = require('../helpers/cloudinary')
 
 const getAllCommunity = async (req, res) => {
   const response = new ServiceResponse()
@@ -35,9 +37,15 @@ const getOneCommunity = async (req, res) => {
       throw createCustomError('No existe una Grupo con ese id', 404)
     }
 
-    const comunidad = await Community.findById(communityId).populate(
-      'members moderators creator'
-    )
+    const comunidad = await Community.findById(communityId)
+      .populate('members moderators creator')
+      .populate({
+        path: 'Posts',
+        populate: {
+          path: 'user',
+          model: 'User'
+        }
+      })
 
     response.setSucessResponse('Grupo  Encontrado Exitosamente', comunidad)
   } catch (error) {
@@ -111,6 +119,12 @@ const addCommunity = async (req, res) => {
       { new: true }
     )
 
+    await userModel.findByIdAndUpdate(
+      creator,
+      { $push: { communities: comunidad._id } },
+      { new: true }
+    )
+
     response.setSucessResponse('Grupo creado Exitosamente', comunidad)
   } catch (error) {
     response.setErrorResponse(error.message, error.code)
@@ -139,7 +153,7 @@ const updateCommunity = async (req, res) => {
       communityId,
       { description, banner },
       { new: true }
-    ).populate('members moderators creator')
+    ).populate('members moderators creator Posts')
     response.setSucessResponse('Grupo Actualizado Exitosamente', comunidad)
   } catch (error) {
     response.setErrorResponse(error.message, error.code)
@@ -187,6 +201,13 @@ const joinCommunity = async (req, res) => {
       { $push: { members: userID } },
       { new: true }
     )
+
+    await userModel.findByIdAndUpdate(
+      userID,
+      { $push: { communities: communityId } },
+      { new: true }
+    )
+
     response.setSucessResponse('Usuario Agregado Correctamente', comunidad)
   } catch (error) {
     response.setErrorResponse(error.message, error.code)
@@ -211,6 +232,12 @@ const leaveCommunity = async (req, res) => {
       {
         $pull: { members: userID, moderators: userID }
       },
+      { new: true }
+    )
+
+    await userModel.findByIdAndUpdate(
+      userID,
+      { $pull: { communities: communityId } },
       { new: true }
     )
 
@@ -242,7 +269,7 @@ const addModerator = async (req, res) => {
       communityId,
       { $push: { moderators: userId } },
       { new: true }
-    ).populate('members moderators creator')
+    ).populate('members moderators creator Posts')
 
     response.setSucessResponse('Usuario Ascendido Correctamente', comunidad)
   } catch (error) {
@@ -272,7 +299,7 @@ const deleteModerator = async (req, res) => {
       communityId,
       { $pull: { moderators: userId } },
       { new: true }
-    ).populate('members moderators creator')
+    ).populate('members moderators creator Posts')
 
     response.setSucessResponse('Usuario Descendido Correctamente', comunidad)
   } catch (error) {
@@ -301,7 +328,13 @@ const deleteMember = async (req, res) => {
       communityId,
       { $pull: { moderators: userId, members: userId } },
       { new: true }
-    ).populate('members moderators creator')
+    ).populate('members moderators creator Posts')
+
+    await userModel.findByIdAndUpdate(
+      userId,
+      { $pull: { communities: communityId } },
+      { new: true }
+    )
 
     response.setSucessResponse('Usuario ha salido del grupo Correctamente', comunidad)
   } catch (error) {
@@ -326,14 +359,29 @@ const addPostGroup = async (req, res) => {
 
     const newPost = new postModel(req.body)
     newPost.user = uid
+    if (req.body.img !== '') {
+      const result = await cloudinary.uploader.upload(req.body.img, {
+        folder: 'posts'
+      })
+      newPost.img = {
+        public_id: result.public_id,
+        url: result.secure_url
+      }
+    } else {
+      newPost.img = {
+        public_id: '',
+        url: ''
+      }
+    }
 
     const savedPost = await newPost.save()
-    await Community.findByIdAndUpdate(
+    await savedPost.populate('user', '-password')
+    const data = await Community.findByIdAndUpdate(
       communityId,
       { $push: { Posts: newPost.id } },
       { new: true }
-    )
-    response.setSucessResponse('Publicación en grupo creada exitosamente', savedPost)
+    ).populate('members moderators creator Posts')
+    response.setSucessResponse('Publicación en grupo creada exitosamente', data)
   } catch (error) {
     response.setErrorResponse(error.message, error.code)
   } finally {
@@ -342,22 +390,27 @@ const addPostGroup = async (req, res) => {
 }
 
 const getPostRecently = async (req, res) => {
-  const communityId = req.params.communityId
   const response = new ServiceResponse()
+  const uid = req.uid
+  const usuario = await userModel.findById(uid)
+  const postComunidades = []
   try {
-    const valid = await Community.findById(communityId).populate({
-      path: 'Posts',
-      options: { sort: { createdAt: 'desc' }, limit: 1 },
-      populate: {
-        path: 'user'
-      }
-    })
+    for (let i = 0; i < usuario.communities.length; i++) {
+      const valid = await Community.findById(usuario.communities[i]).populate({
+        path: 'Posts',
+        options: { sort: { createdAt: 'desc' }, limit: 1 },
+        populate: {
+          path: 'user'
+        }
+      })
 
-    if (!valid) {
-      throw createCustomError('No existe una Grupo con ese id', 404)
+      if (!valid) {
+        throw createCustomError('No existe una Grupo con ese id', 404)
+      }
+      postComunidades.push(valid)
     }
 
-    response.setSucessResponse('Publicación de grupo obtenida exitosamente', valid.Posts)
+    response.setSucessResponse('Publicación de grupo obtenida exitosamente', postComunidades)
   } catch (error) {
     response.setErrorResponse(error.message, error.code)
   } finally {
@@ -373,7 +426,10 @@ const getAllCommunityUser = async (req, res) => {
     if (!valid) {
       throw createCustomError('El usuario no esta asignado a ningun grupo', 404)
     }
-    response.setSucessResponse('Grupos encontrados obtenida exitosamente', valid)
+    response.setSucessResponse(
+      'Grupos donde el usuario pertenece obtenidos exitosamente',
+      valid
+    )
   } catch (error) {
     response.setErrorResponse(error.message, error.code)
   } finally {

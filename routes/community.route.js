@@ -31,7 +31,7 @@ router.post('/addModerator/:communityId', addModerator)
 router.post('/deleteModerator/:communityId', deleteModerator)
 router.post('/deleteMember/:communityId', deleteMember)
 router.post('/addPost/:communityId', addPostGroup)
-router.get('/getPostRecently/:communityId', getPostRecently)
+router.get('/getPostRecently', getPostRecently)
 router.get('/getAllCommunityUser', getAllCommunityUser)
 
 module.exports = router
